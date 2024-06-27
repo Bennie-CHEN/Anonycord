@@ -3,14 +3,13 @@
 //  Anonycord
 //
 //  Created by c22 on 18/12/2022.
+//  Updated by Bennie on 27/06/2024
 //
-
 import SwiftUI
 import Photos
 import AVFoundation
 
 struct RecordView: UIViewControllerRepresentable {
-    
     func makeUIViewController(context: Context) -> UIViewController {
         return RecordViewController()
     }
@@ -25,22 +24,26 @@ class RecordViewController: UIViewController, AVCaptureFileOutputRecordingDelega
     var movieFileOutput: AVCaptureMovieFileOutput!
     var tapCount = 0
     let currentDate = Date()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         captureSession = AVCaptureSession()
-        captureSession.sessionPreset = .high
         
-        guard let backCamera = AVCaptureDevice.default(for: .video) else {
-            UIApplication.shared.alert(title:"App Message", body: "Unable to access back cam")
+        // 设置分辨率
+        captureSession.sessionPreset = .hd1920x1080 // 设置为1080p高清分辨率
+        
+        // 使用前置摄像头
+        guard let frontCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
+            UIApplication.shared.alert(title:"App Message", body: "Unable to access front cam")
             return
         }
         
         do {
-            let input = try AVCaptureDeviceInput(device: backCamera)
+            let input = try AVCaptureDeviceInput(device: frontCamera)
             captureSession.addInput(input)
         } catch {
-            UIApplication.shared.alert(title:"App Message", body: "Unable to access back cam")
+            UIApplication.shared.alert(title:"App Message", body: "Unable to access front cam")
             return
         }
         
@@ -60,11 +63,10 @@ class RecordViewController: UIViewController, AVCaptureFileOutputRecordingDelega
         movieFileOutput = AVCaptureMovieFileOutput()
         captureSession.addOutput(movieFileOutput)
         
-        // Set the audio input and output for the movie file output
         let connection = movieFileOutput.connection(with: .video)
         let recordButton = UIButton(frame: CGRect(x: 0, y: 0, width: 70, height: 70))
         recordButton.center = view.center
-        recordButton.setTitle("----------------------", for: .normal)
+        recordButton.setTitle("-------", for: .normal) // 按钮标题
         if self.traitCollection.userInterfaceStyle == .dark {
             recordButton.setTitleColor(.black, for: .normal)
         } else {
@@ -96,11 +98,13 @@ class RecordViewController: UIViewController, AVCaptureFileOutputRecordingDelega
             UISaveVideoAtPathToSavedPhotosAlbum(outputFileURL.path, self, #selector(videoSaved(_:didFinishSavingWithError:contextInfo:)), nil)
         }
     }
+    
     func applicationWillTerminate(_ application: UIApplication) {
         if movieFileOutput.isRecording {
             movieFileOutput.stopRecording()
         }
     }
+    
     @objc func videoSaved(_ videoPath: String, didFinishSavingWithError error: Error?, contextInfo info: AnyObject) {
         if error != nil {
             UIApplication.shared.alert(title:"App Message", body: "Error saving video: \(error!.localizedDescription)")
